@@ -1,5 +1,11 @@
 import hashlib
 
+def error(message):
+    print(rgb_color(255, 50, 50) + message + reset_color())
+
+def success(message):
+    print(rgb_color(50, 255, 50) + message + reset_color())
+
 def rgb_color(r, g, b):
     return f"\033[38;2;{r};{g};{b}m"
 

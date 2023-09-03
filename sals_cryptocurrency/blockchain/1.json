@@ -1,0 +1,21 @@
+{
+    "id": 1,
+    "nonce": 317483797149,
+    "data": [
+        {
+            "type": "wallet_creation",
+            "username": "Wallet1",
+            "password": "0b14d501a594442a01c6859541bcb3e8164d183d32937b851835442f69d5c94e",
+            "balance": 100.0
+        },
+        {
+            "type": "wallet_creation",
+            "username": "Wallet2",
+            "password": "6cf615d5bcaac778352a8f1f3360d23f02f34ec182e259897fd6ce485d7870d4",
+            "balance": 100.0
+        }
+    ],
+    "timestamp": "2023-09-03T18:24:16.035915",
+    "prev": "0000075f634f00ff0318580dbe2ee8b2351aef5ba8ae31bb4936067dc9eec8f4",
+    "hash": "000007b4d67cb8f14876d6179ec3f05a44694dc4361eedde9dd81273710b2f19"
+}

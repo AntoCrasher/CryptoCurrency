@@ -1,5 +1,6 @@
 import time
 
+from UserManager import UserManager
 from Blockchain import Blockchain
 import Utils
 
@@ -33,6 +34,9 @@ def main():
     print(Utils.rgb_color(0, 200, 255) + 'Started blockchain!' + Utils.reset_color())
 
     blockchain = Blockchain()
+    user_manager = UserManager()
+
+    wallets_adresses = {}
 
     transaction_pool_thread = threading.Thread(target=transaction_pool, args=(blockchain, ))
     transaction_pool_thread.daemon = True
@@ -44,10 +48,59 @@ def main():
         if message['type'] == 'connection':
             print(Utils.rgb_color(200, 50, 255) + f'{message["origin"].capitalize()} #{address[1]} connected!' + Utils.reset_color())
             continue
+
+        if message['type'] == 'username_exist':
+            username = message['data']
+            exists = user_manager.username_exist(username)
+            message_json = {
+                'origin': 'blockchain',
+                'type': 'username_exist',
+                'data': exists,
+            }
+            server_socket.sendto(json.dumps(message_json).encode('utf-8'), address)
+            continue
+
+        if message['type'] == 'create_wallet':
+            username = message['data']['username']
+            password = message['data']['password']
+            data = {
+                'type': 'wallet_creation',
+                'username': username,
+                'password': Utils.sha256(password),
+                'balance': blockchain.initial_balance
+            }
+            wallets_adresses[username] = address
+            blockchain.add_to_transaction_pool(data)
+            continue
+
+        if message['type'] == 'sign-in':
+            username = message['data']['username']
+            password = message['data']['password']
+            success = user_manager.sign_in(username, password)
+            message_json = {
+                'origin': 'blockchain',
+                'type': 'sign-in',
+                'data': success,
+            }
+            wallets_adresses[username] = address
+            server_socket.sendto(json.dumps(message_json).encode('utf-8'), address)
+            continue
+
+        if message['type'] == 'get_balance':
+            username = message['data']
+            balance = user_manager.get_balance(username)
+            message_json = {
+                'origin': 'blockchain',
+                'type': 'get_balance',
+                'data': balance,
+            }
+            server_socket.sendto(json.dumps(message_json).encode('utf-8'), address)
+            continue
+
         if message['origin'] == 'user':
             data = message['data']
             blockchain.add_to_transaction_pool(data)
-            print(Utils.rgb_color(50, 50, 255) + f'Added to Transaction Pool: {data}' + Utils.reset_color())
+
         if message['origin'] == 'miner':
             if message['type'] == 'request_to_mine':
                 message_json = {}
@@ -73,6 +126,45 @@ def main():
                 if blockchain.current_mine_index >= 0:
                     message_json['data'] = True
                     data = message['data']
+                    for action in blockchain.await_to_mine:
+                        if action['type'] == 'transaction':
+                            sender = action['sender']
+                            recipient = action['recipient']
+                            amount = action['amount']
+                            success = user_manager.send(sender, recipient, amount)
+                            message_json_sender = {
+                                'origin': 'blockchain',
+                                'type': 'confirmation',
+                                'process': 'transaction',
+                                'recipient': recipient,
+                                'amount': amount,
+                                'data': success,
+                            }
+                            message_json_recipient = {
+                                'origin': 'blockchain',
+                                'type': 'confirmation',
+                                'process': 'payment',
+                                'sender': username,
+                                'amount': amount,
+                                'data': success,
+                            }
+                            if username in wallets_adresses:
+                                server_socket.sendto(json.dumps(message_json_sender).encode('utf-8'), wallets_adresses[username])
+                            if recipient in wallets_adresses:
+                                server_socket.sendto(json.dumps(message_json_recipient).encode('utf-8'), wallets_adresses[recipient])
+                        if action['type'] == 'wallet_creation':
+                            username = action['username']
+                            password = action['password']
+                            balance = action['balance']
+                            success = user_manager.create_wallet(username, password, balance)
+                            message_json = {
+                                'origin': 'blockchain',
+                                'type': 'confirmation',
+                                'process': 'wallet_creation',
+                                'data': success,
+                            }
+                            if username in wallets_adresses:
+                                server_socket.sendto(json.dumps(message_json).encode('utf-8'), wallets_adresses[username])
                     blockchain.publish_block(data[0], data[1])
                 else:
                     message_json['data'] = False

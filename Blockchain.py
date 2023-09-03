@@ -7,7 +7,8 @@ import os
 
 class Blockchain:
     def __init__(self):
-        self.path = "./block_chain/"
+        self.path = "./sals_cryptocurrency/blockchain/"
+        self.initial_balance = 100.0
         self.pool_size = 3
         self.max_block_time = 10.0
         self.transaction_pool = []
@@ -15,7 +16,7 @@ class Blockchain:
         self.current_mine_index = -1
         if self.get_last_block() == None:
             print(Utils.rgb_color(255, 50, 50) + 'Genesis NOT found (mining)' + Utils.reset_color())
-            genesis = self.create_block('')
+            genesis = self.create_block([])
             while not genesis.is_hash_valid():
                 genesis.mine()
             self.save_block(genesis)
@@ -33,6 +34,7 @@ class Blockchain:
 
     def add_to_transaction_pool(self, data):
         self.transaction_pool.append(data)
+        Utils.success(f'Added to Transaction Pool: {data}')
 
     def add_to_await_to_mine(self):
         self.await_to_mine = self.transaction_pool

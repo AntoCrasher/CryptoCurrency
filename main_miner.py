@@ -33,7 +33,7 @@ def mine(server_socket, data):
     print(Utils.rgb_color(255, 150, 50) + f'Mining block {data["index"]}...' + Utils.reset_color())
     nonce = mine_pool(data['index'], data['await_to_mine'], data['prev'], data['timestamp'])
     if nonce == None:
-        print(Utils.rgb_color(255, 50, 50) + f'Block already mined!' + Utils.reset_color())
+        Utils.error(f'Block already mined!')
         return
     print(Utils.rgb_color(50, 255, 50) + f'Mined block {data["index"]} with nonce: {nonce}!' + Utils.reset_color())
     return_json = {
@@ -87,7 +87,7 @@ def main():
                 if message['data']:
                     print(Utils.rgb_color(50, 255, 50) + f'Block confirmed successfully!' + Utils.reset_color())
                 else:
-                    print(Utils.rgb_color(255, 50, 50) + f'Block already mined!' + Utils.reset_color())
+                    Utils.error(f'Block already mined!')
 
             time.sleep(0.1)
         except socket.timeout:
