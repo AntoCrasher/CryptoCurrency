@@ -54,6 +54,4 @@ if __name__ == '__main__':
 
 # wallet = Wallet()
 # print(wallet.private_key)
-# print(wallet.public_key)
-
-# test
+# print(wallet.public_key)\
