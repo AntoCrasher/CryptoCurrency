@@ -1,0 +1,12 @@
+{
+    "id": 1,
+    "nonce": 192268161038,
+    "data": [
+        "a",
+        "b",
+        "c"
+    ],
+    "timestamp": "2023-09-02T19:54:50.841091",
+    "prev": "00000a453ec0a017ffd33a1a5138ba5bf4e84ad97dced11dc65532c19e88a3f6",
+    "hash": "00000e1c4171ab557102c386eb4e10b7dff2fc8565391173dca3c6eb9457deeb"
+}
