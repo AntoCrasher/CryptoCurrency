@@ -1,10 +1,12 @@
 {
     "id": 3,
-    "nonce": 904576788491,
+    "nonce": 647037132643,
     "data": [
-        "d"
+        "g",
+        "h",
+        "i"
     ],
-    "timestamp": "2023-09-02T20:16:40.634329",
-    "prev": "00000ea3c55463ba42246d2912cc1bd5e8b7c66ef74383a04f6e4a63df08a970",
-    "hash": "000006c6c3a3610c5328f1e98528f76466fddbfcc800734edf0c358736676f0e"
+    "timestamp": "2023-09-03T14:59:05.357604",
+    "prev": "00000bb954e76bb0058dff719f2bda1cdfdcca1f953aabb4e3082dabd1222389",
+    "hash": "00000de0eea42f542efa8f36c3f0bb0bd5448cb118f003426276b62d0a195313"
 }
