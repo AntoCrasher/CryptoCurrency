@@ -1,6 +1,6 @@
 {
     "id": 2,
-    "nonce": 317490041163,
+    "nonce": 317490167371,
     "data": [
         {
             "type": "transaction",
@@ -9,7 +9,7 @@
             "amount": 50.0
         }
     ],
-    "timestamp": "2023-09-03T18:25:43.082678",
-    "prev": "000007b4d67cb8f14876d6179ec3f05a44694dc4361eedde9dd81273710b2f19",
-    "hash": "000003768a4fe4e892e8f4cdf8dbf3a42e67809b625787fe88612a696df344df"
+    "timestamp": "2023-09-03T18:44:59.967752",
+    "prev": "000009533197a42ebd37db185ff9a9992d6fad0c6407e8a2aa340bf9b8f23bcc",
+    "hash": "00000353bd675c3926eeff21c37b4c6b57fc7f009ae07366efe46cbce22bbde5"
 }

@@ -274,13 +274,13 @@ def main():
                 }
                 server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', blockchain_port))
             else:
-                Utils.error('Please sign-in to an account.')
+                Utils.error('Please sign-in to a wallet.')
 
         if command == 'balance':
             if signed_in:
                 print(Utils.rgb_color(50, 50, 255) + f'You have {round(get_balance(server_socket, username), 2)} sal(s).' + Utils.reset_color())
             else:
-                Utils.error('Please sign-in to an account.')
+                Utils.error('Please sign-in to a wallet.')
 
 
 if __name__ == "__main__":
