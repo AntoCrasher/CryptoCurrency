@@ -133,8 +133,13 @@ def main():
     global last_input
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    port = int(input('Port: '))
-    server_socket.bind(('192.168.1.36', port))
+    while True:
+        try:
+            port = int(input('Port: '))
+            server_socket.bind(('192.168.1.36', port))
+            break
+        except:
+            Utils.error("Invalid port.")
 
     signed_in = False
     username = ''

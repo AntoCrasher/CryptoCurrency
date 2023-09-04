@@ -52,8 +52,14 @@ def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_socket.settimeout(1.0)
 
-    port = int(input('Port: '))
-    server_socket.bind(('192.168.1.36', port))
+    while True:
+        try:
+            port = int(input('Port: '))
+            server_socket.bind(('192.168.1.36', port))
+            break
+        except:
+            Utils.error("Invalid port.")
+
     random.seed(port)
 
     message_json = {
