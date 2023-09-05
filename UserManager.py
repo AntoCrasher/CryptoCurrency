@@ -54,6 +54,16 @@ class UserManager:
             return False
         return True
 
+    def change_sals(self, username, amount):
+        ledger = json.loads(open(self.ledger_path).read())
+        ledger[username] += amount
+        try:
+            with open(self.ledger_path, 'w') as ledger_file:
+                ledger_file.write(json.dumps(ledger, indent=4))
+        except:
+            return False
+        return True
+
     def get_balance(self, username):
         ledger = json.loads(open(self.ledger_path).read())
         return ledger[username]

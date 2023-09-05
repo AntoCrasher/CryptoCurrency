@@ -1,6 +1,6 @@
 {
     "id": 2,
-    "nonce": 317490167371,
+    "nonce": 988983280716,
     "data": [
         {
             "type": "transaction",
@@ -9,7 +9,9 @@
             "amount": 50.0
         }
     ],
-    "timestamp": "2023-09-03T18:44:59.967752",
-    "prev": "000009533197a42ebd37db185ff9a9992d6fad0c6407e8a2aa340bf9b8f23bcc",
-    "hash": "00000353bd675c3926eeff21c37b4c6b57fc7f009ae07366efe46cbce22bbde5"
+    "miner": "Wallet2",
+    "reward": 5.0,
+    "timestamp": "2023-09-05T14:33:14.195205",
+    "prev": "000003fb7060799e686b2576e5fea31a4f9bfa64a98469384804c297d020bfe8",
+    "hash": "00000e7a4f8099891473f1aedb5fc27440f730a846e6975b8fafcfbdcf578945"
 }

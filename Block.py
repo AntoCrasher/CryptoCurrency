@@ -4,10 +4,12 @@ from datetime import datetime
 import json
 
 class Block:
-    def __init__(self, id, data, prev, timestamp, nonce=1):
+    def __init__(self, id, data, miner, reward, prev, timestamp, nonce=1):
         self.id = id
         self.nonce = nonce
         self.data = data
+        self.miner = miner
+        self.reward = reward
         self.timestamp = timestamp
         self.prev = prev
         self.hash = self.get_hash()
@@ -24,6 +26,8 @@ class Block:
             'id': self.id,
             'nonce': self.nonce,
             'data': self.data,
+            'miner': self.miner,
+            'reward': self.reward,
             'timestamp': self.timestamp,
             'prev': self.prev
         }
@@ -34,6 +38,8 @@ class Block:
             'id': self.id,
             'nonce': self.nonce,
             'data': self.data,
+            'miner': self.miner,
+            'reward': self.reward,
             'timestamp': self.timestamp,
             'prev': self.prev,
             'hash': self.hash

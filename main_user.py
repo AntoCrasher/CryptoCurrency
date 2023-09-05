@@ -1,3 +1,4 @@
+import sys
 import time
 
 from Blockchain import Blockchain
@@ -7,7 +8,6 @@ import threading
 import socket
 import json
 
-blockchain_port = 6000
 last_input = ''
 
 username_exists_value = False
@@ -19,6 +19,8 @@ sign_in_returned = False
 get_balance_value = False
 get_balance_returned = False
 
+config = json.loads(open('config.json').read())
+
 def create_wallet(server_socket, username, password):
     message_json = {
         'origin': 'user',
@@ -28,7 +30,7 @@ def create_wallet(server_socket, username, password):
             'password': password
         }
     }
-    server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', blockchain_port))
+    server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], config['blockchain-port']))
 
 def username_exist(server_socket, username):
     global username_exists_value
@@ -39,7 +41,7 @@ def username_exist(server_socket, username):
         'type': 'username_exist',
         'data': username
     }
-    server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', blockchain_port))
+    server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], config['blockchain-port']))
     while not username_exists_returned:
         time.sleep(0.1)
     username_exists_returned = False
@@ -57,7 +59,7 @@ def sign_in(server_socket, username, password):
             'password': password
         }
     }
-    server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', blockchain_port))
+    server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], config['blockchain-port']))
     while not sign_in_returned:
         time.sleep(0.1)
     sign_in_returned = False
@@ -72,7 +74,7 @@ def get_balance(server_socket, username):
         'type': 'get_balance',
         'data': username
     }
-    server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', blockchain_port))
+    server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], config['blockchain-port']))
     while not get_balance_returned:
         time.sleep(0.1)
     get_balance_returned = False
@@ -104,13 +106,17 @@ def confirmations(server_socket):
             if message['process'] == 'transaction':
                 success = message['data']
                 if success:
-                    Utils.success(f'Successfully sent {message["recipient"]} {Utils.rgb_color(50, 50, 255)}{message["amount"]} sal(s){Utils.rgb_color(50, 255, 50)}!')
+                    Utils.success(f'Successfully sent {message["recipient"]} {Utils.currency(message["amount"])}{Utils.C_SUCCESS}!')
                 else:
                     Utils.error('Transaction could not be completed!')
             if message['process'] == 'payment':
                 success = message['data']
                 if success:
-                    Utils.success(f'You received {Utils.rgb_color(50, 50, 255)}{message["amount"]} sal(s){Utils.rgb_color(50, 255, 50)} from {message["sender"]}!')
+                    Utils.success(f'You received {Utils.currency(message["amount"])}{Utils.C_SUCCESS} from {message["sender"]}!')
+            if message['process'] == 'miner_reward':
+                success = message['data']
+                if success:
+                    Utils.success(f'You received a reward of {Utils.currency(message["reward"])}{Utils.C_SUCCESS} for mining block #{message["id"]}!')
             print(last_input, end='')
         if message['type'] == 'username_exist':
             username_exists_value = message['data']
@@ -131,15 +137,20 @@ def show_options(options):
 
 def main():
     global last_input
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+    port_offset = 1
     while True:
         try:
-            port = int(input('Port: '))
-            server_socket.bind(('192.168.1.36', port))
+            port = config['blockchain-port'] + port_offset
+            if port >= 9999:
+                Utils.error('Could not find port!')
+                return
+            server_socket.bind((config['ip-address'], port))
             break
         except:
-            Utils.error("Invalid port.")
+            port_offset += 1
 
     signed_in = False
     username = ''
@@ -148,7 +159,8 @@ def main():
         'origin': 'user',
         'type': 'connection'
     }
-    server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', blockchain_port))
+    server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], config['blockchain-port']))
+    Utils.connect(f'Connected as User #{port}!')
 
     confirmations_thread = threading.Thread(target=confirmations, args=(server_socket,))
     confirmations_thread.daemon = True
@@ -172,56 +184,62 @@ def main():
         if command == 'h':
             show_options(options)
         if command == 'create wallet':
-            while True:
-                last_input = 'Username: '
-                username = input('Username: ')
-                if username == 'q':
-                    quit_loop = True
-                    break
-                if len(username) >= 3:
-                    username_exists = username_exist(server_socket, username)
-                    if username_exists:
-                        Utils.error('Username already taken! (Try logging in)')
-                        continue
-                    break
-                else:
-                    Utils.error('Username must have at least 3 characters.')
-            if quit_loop:
-                continue
+            if not signed_in:
+                while True:
+                    last_input = 'Username: '
+                    username = input('Username: ')
+                    if username == 'q':
+                        quit_loop = True
+                        break
+                    if len(username) >= 3:
+                        username_exists = username_exist(server_socket, username)
+                        if username_exists:
+                            Utils.error('Username already taken! (Try logging in)')
+                            continue
+                        break
+                    else:
+                        Utils.error('Username must have at least 3 characters.')
+                if quit_loop:
+                    continue
 
-            while True:
+                while True:
+                    last_input = 'Password: '
+                    password = input(last_input)
+                    if password == 'q':
+                        quit_loop = True
+                        break
+                    if len(password) < 5:
+                        Utils.error('Password must have at least 5 characters.')
+                    elif not any(char.isdigit() for char in password):
+                        Utils.error('Password must contain at least one digit.')
+                    elif not any(char.isalpha() for char in password):
+                        Utils.error('Password must contain at least one letter.')
+                    else:
+                        break
+                if quit_loop:
+                    continue
+                create_wallet(server_socket, username, password)
+            else:
+                Utils.error('Already signed into a wallet!')
+
+        if command == 'sign-in':
+            if not signed_in:
+                last_input = 'Username: '
+                username = input(last_input)
+                if username == 'q':
+                    continue
                 last_input = 'Password: '
                 password = input(last_input)
                 if password == 'q':
-                    quit_loop = True
-                    break
-                if len(password) < 5:
-                    Utils.error('Password must have at least 5 characters.')
-                elif not any(char.isdigit() for char in password):
-                    Utils.error('Password must contain at least one digit.')
-                elif not any(char.isalpha() for char in password):
-                    Utils.error('Password must contain at least one letter.')
+                    continue
+                success = sign_in(server_socket, username, password)
+                if success:
+                    signed_in = True
+                    Utils.success('Successfully signed in!')
                 else:
-                    break
-            if quit_loop:
-                continue
-            create_wallet(server_socket, username, password)
-
-        if command == 'sign-in':
-            last_input = 'Username: '
-            username = input(last_input)
-            if username == 'q':
-                continue
-            last_input = 'Password: '
-            password = input(last_input)
-            if password == 'q':
-                continue
-            success = sign_in(server_socket, username, password)
-            if success:
-                signed_in = True
-                Utils.success('Successfully signed in!')
+                    Utils.error('Invalid username or password!')
             else:
-                Utils.error('Invalid username or password!')
+                Utils.error('Already signed into a wallet!')
 
         if command == 'send':
             if signed_in:
@@ -231,8 +249,8 @@ def main():
                     if recipient == 'q':
                         quit_loop = True
                         break
-                    username_exists = username_exist(server_socket, username)
-                    if not username_exists:
+                    recipient_exists = username_exist(server_socket, recipient)
+                    if not recipient_exists:
                         Utils.error('Recipient does not exist!')
                     else:
                         break
@@ -258,14 +276,14 @@ def main():
                 if quit_loop:
                     continue
 
-                print(Utils.rgb_color(255, 150, 50) + f'Are you sure you want to send {recipient}' + Utils.rgb_color(50, 50, 255) + f' {amount} sal(s)' + Utils.rgb_color(255, 150, 50) + '?' + Utils.reset_color())
+                Utils.warning(f'Are you sure you want to send {recipient} {Utils.currency(amount)}{Utils.C_WARNING}?')
 
                 user_input = input('y | (n): ').strip().lower()
                 if user_input != 'y':
                     Utils.error('Cancelled.')
                     continue
 
-                print(Utils.rgb_color(255, 150, 50) + 'Processing...' + Utils.reset_color())
+                Utils.warning('Processing...')
 
                 message_json = {
                     'origin': 'user',
@@ -277,13 +295,13 @@ def main():
                         'amount': amount
                     }
                 }
-                server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', blockchain_port))
+                server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], config['blockchain-port']))
             else:
                 Utils.error('Please sign-in to a wallet.')
 
         if command == 'balance':
             if signed_in:
-                print(Utils.rgb_color(50, 50, 255) + f'You have {round(get_balance(server_socket, username), 2)} sal(s).' + Utils.reset_color())
+                Utils.info(f'You have {Utils.currency(round(get_balance(server_socket, username), 2))}.')
             else:
                 Utils.error('Please sign-in to a wallet.')
 

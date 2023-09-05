@@ -14,22 +14,23 @@ class Blockchain:
         self.transaction_pool = []
         self.await_to_mine = []
         self.current_mine_index = -1
+        self.reward = 5.0
         if self.get_last_block() == None:
-            print(Utils.rgb_color(255, 50, 50) + 'Genesis NOT found (mining)' + Utils.reset_color())
-            genesis = self.create_block([])
+            Utils.error('Genesis NOT found (mining)')
+            genesis = self.create_block([], 'bc')
             while not genesis.is_hash_valid():
                 genesis.mine()
             self.save_block(genesis)
-            print(Utils.rgb_color(50, 255, 50) + 'Mined new Genesis Block!' + Utils.reset_color())
+            Utils.success('Mined new Genesis Block!')
 
-    def create_block(self, data):
+    def create_block(self, data, miner):
         last_block = self.get_last_block()
         last_id = -1
         last_hash = '0'*64
         if last_block != None:
             last_id = last_block.id
             last_hash = last_block.hash
-        new_block = Block(last_id + 1, data, last_hash, datetime.now().isoformat())
+        new_block = Block(last_id + 1, data, miner, 0.0, last_hash, datetime.now().isoformat())
         return new_block
 
     def add_to_transaction_pool(self, data):
@@ -45,16 +46,17 @@ class Blockchain:
         ret = {
             'index': self.current_mine_index,
             'await_to_mine': self.await_to_mine,
+            'reward': self.reward,
             'prev': self.get_last_block().hash,
             'timestamp': datetime.now().isoformat()
         }
         return ret
 
-    def publish_block(self, timestamp, nonce):
-        block = Block(self.current_mine_index, self.await_to_mine, self.get_last_block().hash, timestamp, nonce)
+    def publish_block(self, data):
+        block = Block(data['id'], data['data'], data['miner'], data['reward'], data['prev'], data['timestamp'], data['nonce'])
         self.save_block(block)
         self.await_to_mine = []
-        print(Utils.rgb_color(50, 255, 50) + f'Mined block {block.id}!' + Utils.reset_color())
+        Utils.success(f'Mined block {block.id}!')
 
     def get_last_block(self):
         files = os.listdir(self.path)
@@ -82,7 +84,7 @@ class Blockchain:
 
     def parse_block(self, path):
         block_data = json.loads(open(path).read())
-        block = Block(block_data['id'], block_data['data'], block_data['prev'], block_data['timestamp'], block_data['nonce'])
+        block = Block(block_data['id'], block_data['data'], block_data['miner'], block_data['reward'], block_data['prev'], block_data['timestamp'], block_data['nonce'])
         return block
 
     def __str__(self):

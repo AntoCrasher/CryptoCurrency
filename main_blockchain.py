@@ -8,6 +8,8 @@ import threading
 import socket
 import json
 
+config = json.loads(open('config.json').read())
+
 def transaction_pool(blockchain):
     time_without_transaction = 0.0
     last_length = 0
@@ -21,17 +23,15 @@ def transaction_pool(blockchain):
         if (current_length >= blockchain.pool_size or time_without_transaction >= blockchain.max_block_time) and len(blockchain.await_to_mine) == 0:
             blockchain.add_to_await_to_mine()
             if len(blockchain.await_to_mine) > 0:
-
-                print(Utils.rgb_color(255, 150, 50) + f'Await to Mine: {blockchain.await_to_mine}' + Utils.reset_color())
+                Utils.warning(f'Await to Mine: {blockchain.await_to_mine}')
         last_length = current_length
     pass
 
 def main():
-    blockchain_port = 6000
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_socket.bind(('192.168.1.36', blockchain_port))  # Replace '0.0.0.0' with your local IP address
+    server_socket.bind((config['ip-address'], config['blockchain-port']))
 
-    print(Utils.rgb_color(0, 200, 255) + 'Started blockchain!' + Utils.reset_color())
+    Utils.connect('Started blockchain!')
 
     blockchain = Blockchain()
     user_manager = UserManager()
@@ -46,7 +46,7 @@ def main():
         message, address = server_socket.recvfrom(1024)
         message = json.loads(message.decode('utf-8'))
         if message['type'] == 'connection':
-            print(Utils.rgb_color(200, 50, 255) + f'{message["origin"].capitalize()} #{address[1]} connected!' + Utils.reset_color())
+            Utils.connection(f'{message["origin"].capitalize()} #{address[1]} connected!')
             continue
 
         if message['type'] == 'username_exist':
@@ -74,15 +74,16 @@ def main():
             continue
 
         if message['type'] == 'sign-in':
-            username = message['data']['username']
-            password = message['data']['password']
-            success = user_manager.sign_in(username, password)
+            i_username = message['data']['username']
+            i_password = message['data']['password']
+            success = user_manager.sign_in(i_username, i_password)
             message_json = {
                 'origin': 'blockchain',
                 'type': 'sign-in',
                 'data': success,
             }
-            wallets_adresses[username] = address
+            if message['origin'] == 'user':
+                wallets_adresses[i_username] = address
             server_socket.sendto(json.dumps(message_json).encode('utf-8'), address)
             continue
 
@@ -165,7 +166,19 @@ def main():
                             }
                             if username in wallets_adresses:
                                 server_socket.sendto(json.dumps(message_json).encode('utf-8'), wallets_adresses[username])
-                    blockchain.publish_block(data[0], data[1])
+                    if data['miner'] != '-':
+                        success = user_manager.change_sals(data['miner'], data['reward'])
+                        if data['miner'] in wallets_adresses:
+                            message_json_miner = {
+                                'origin': 'blockchain',
+                                'type': 'confirmation',
+                                'process': 'miner_reward',
+                                'id': data['id'],
+                                'reward': data['reward'],
+                                'data': success,
+                            }
+                            server_socket.sendto(json.dumps(message_json_miner).encode('utf-8'), wallets_adresses[data['miner']])
+                    blockchain.publish_block(data)
                 else:
                     message_json['data'] = False
 

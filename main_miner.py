@@ -9,18 +9,25 @@ import socket
 import time
 import json
 
+config = json.loads(open('config.json').read())
+
+is_mining = False
 mining = False
 current_id = -1
 already_mined = []
+last_input = ''
+signed_in = False
+username = '-'
 
-def mine_pool(id, data, prev, timestamp):
+def mine_pool(data):
     global mining
     global current_id
+    global username
 
-    block = Block(id, data, prev, timestamp, random.randint(0, 10**12))
+    block = Block(data['index'], data['await_to_mine'], username, data['reward'], data['prev'], data['timestamp'], random.randint(0, 10**12))
     while not block.is_hash_valid() and mining:
         block.mine()
-        if current_id != id:
+        if current_id != data['index']:
             mining = False
     if mining:
         return block.nonce
@@ -29,52 +36,49 @@ def mine_pool(id, data, prev, timestamp):
 
 def mine(server_socket, data):
     global mining
+    global last_input
+    global username
 
-    print(Utils.rgb_color(255, 150, 50) + f'Mining block {data["index"]}...' + Utils.reset_color())
-    nonce = mine_pool(data['index'], data['await_to_mine'], data['prev'], data['timestamp'])
+    Utils.warning(f'\nMining block {data["index"]}...')
+    print(last_input, end='')
+    nonce = mine_pool(data)
     if nonce == None:
-        Utils.error(f'Block already mined!')
+        Utils.error(f'\nBlock already mined!')
+        print(last_input, end='')
         return
-    print(Utils.rgb_color(50, 255, 50) + f'Mined block {data["index"]} with nonce: {nonce}!' + Utils.reset_color())
+    Utils.success(f'\nMined block #{data["index"]} with nonce: {nonce}!')
+    print(last_input, end='')
+    block = Block(data['index'], data['await_to_mine'], username, data['reward'], data['prev'], data['timestamp'], nonce)
     return_json = {
         'origin': 'miner',
         'type': 'return_mine',
-        'data': [data['timestamp'], nonce]
+        'data': block.json()
     }
-    server_socket.sendto(json.dumps(return_json).encode('utf-8'), ('192.168.1.36', 6000))
+    server_socket.sendto(json.dumps(return_json).encode('utf-8'), (config['ip-address'], 6000))
     mining = False
 
-def main():
+def show_options(options):
+    print("Options:")
+    for i, option in enumerate(options, start=1):
+        print(f"{i}. {option.capitalize()}")
+    print('q. Cancel current')
+    print('h. Show this menu')
+
+def start_mining(server_socket):
+    global is_mining
     global mining
     global current_id
     global already_mined
+    global last_input
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_socket.settimeout(1.0)
-
-    while True:
-        try:
-            port = int(input('Port: '))
-            server_socket.bind(('192.168.1.36', port))
-            break
-        except:
-            Utils.error("Invalid port.")
-
-    random.seed(port)
-
-    message_json = {
-        'origin': 'miner',
-        'type': 'connection'
-    }
-    server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', 6000))
-
-    while True:
+    is_mining = True
+    while is_mining:
         try:
             message_json = {
                 'origin': 'miner',
                 'type': 'request_to_mine'
             }
-            server_socket.sendto(json.dumps(message_json).encode('utf-8'), ('192.168.1.36', 6000))
+            server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], 6000))
             message, address = server_socket.recvfrom(1024)
             message = json.loads(message.decode('utf-8'))
             data = message['data']
@@ -91,13 +95,115 @@ def main():
                 current_id = data
             if message['type'] == 'confirmation':
                 if message['data']:
-                    print(Utils.rgb_color(50, 255, 50) + f'Block confirmed successfully!' + Utils.reset_color())
+                    Utils.success(f'\nBlock confirmed successfully!')
                 else:
                     Utils.error(f'Block already mined!')
+                print(last_input, end='')
 
             time.sleep(0.1)
         except socket.timeout:
             continue
+
+def sign_in(server_socket, username, password):
+    message_json = {
+        'origin': 'miner',
+        'type': 'sign-in',
+        'data': {
+            'username': username,
+            'password': password
+        }
+    }
+    server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], config['blockchain-port']))
+    message, address = server_socket.recvfrom(1024)
+    message = json.loads(message.decode('utf-8'))
+    return message['data']
+
+def main():
+    global is_mining
+    global mining
+    global current_id
+    global already_mined
+    global last_input
+    global signed_in
+    global username
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    server_socket.settimeout(1.0)
+
+    port_offset = 1
+    while True:
+        try:
+            port = config['blockchain-port'] + port_offset
+            if port >= 9999:
+                Utils.error('Could not find port!')
+                return
+            server_socket.bind((config['ip-address'], port))
+            break
+        except:
+            port_offset += 1
+
+    random.seed(port)
+
+    message_json = {
+        'origin': 'miner',
+        'type': 'connection'
+    }
+    server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], 6000))
+    Utils.connect(f'Connected as Miner #{port}!')
+
+    options = ['sign-in', 'start mining', 'stop mining', 'balance']
+    show_options(options)
+    while True:
+        quit_loop = False
+        while True:
+            try:
+                last_input = f'Enter your choice (1-{len(options)}): '
+                choice = int(input(last_input))
+                if 1 <= choice <= len(options):
+                    command = options[choice - 1]
+                    break
+                else:
+                    Utils.error("Invalid choice. Please enter a valid number.")
+            except ValueError:
+                Utils.error("Invalid input. Please enter a number.")
+
+        if command == 'h':
+            show_options(options)
+
+        if command == 'sign-in':
+            last_input = 'Username: '
+            username = input(last_input)
+            if username == 'q':
+                username = '-'
+                continue
+            last_input = 'Password: '
+            password = input(last_input)
+            if password == 'q':
+                continue
+            success = sign_in(server_socket, username, password)
+            if success:
+                signed_in = True
+                Utils.success('Successfully signed in!')
+            else:
+                Utils.error('Invalid username or password!')
+
+        if command == 'start mining':
+            if not signed_in:
+                Utils.warning('Rewards will not be awarded if not signed in.')
+            if not is_mining:
+                Utils.success('Started mining!')
+                mining_thread = threading.Thread(target=start_mining, args=(server_socket,))
+                mining_thread.daemon = True
+                mining_thread.start()
+            else:
+                Utils.error('Already mining!')
+
+        if command == 'stop mining':
+            if is_mining:
+                Utils.success('Stopped mining!')
+                is_mining = False
+            else:
+                Utils.error('Currently not mining!')
 
 
 if __name__ == "__main__":

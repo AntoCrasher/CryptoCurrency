@@ -1,6 +1,6 @@
 {
     "id": 1,
-    "nonce": 317483788572,
+    "nonce": 822506754527,
     "data": [
         {
             "type": "wallet_creation",
@@ -15,7 +15,9 @@
             "balance": 100.0
         }
     ],
-    "timestamp": "2023-09-03T18:44:11.976473",
-    "prev": "0000026e385b686cf5b9a1b958f2e7765e5ca1798f16a653a67f457ad2844b47",
-    "hash": "000009533197a42ebd37db185ff9a9992d6fad0c6407e8a2aa340bf9b8f23bcc"
+    "miner": "-",
+    "reward": 5.0,
+    "timestamp": "2023-09-05T14:31:40.083042",
+    "prev": "0000009d63ff49b469ee9549a27d0a3678ccfd33d6cf422620e11deda4bb9626",
+    "hash": "000003fb7060799e686b2576e5fea31a4f9bfa64a98469384804c297d020bfe8"
 }
