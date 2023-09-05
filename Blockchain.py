@@ -14,7 +14,7 @@ class Blockchain:
         self.transaction_pool = []
         self.await_to_mine = []
         self.current_mine_index = -1
-        self.reward = 5.0
+        self.reward = json.loads(open('config.json').read())['mining-reward']
         if self.get_last_block() == None:
             Utils.error('Genesis NOT found (mining)')
             genesis = self.create_block([], 'bc')

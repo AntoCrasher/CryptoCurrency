@@ -1,4 +1,5 @@
 {
     "ip-address": "127.0.0.1",
-    "blockchain-port": 6000
+    "blockchain-port": 6000,
+    "mining-reward": 5.0
 }
