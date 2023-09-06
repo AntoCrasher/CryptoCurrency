@@ -19,6 +19,9 @@ sign_in_returned = False
 get_balance_value = False
 get_balance_returned = False
 
+is_chain_valid_value = False
+is_chain_valid_returned = False
+
 config = json.loads(open('config.json').read())
 
 def create_wallet(server_socket, username, password):
@@ -80,6 +83,20 @@ def get_balance(server_socket, username):
     get_balance_returned = False
     return get_balance_value
 
+def is_chain_valid(server_socket):
+    global is_chain_valid_value
+    global is_chain_valid_returned
+
+    message_json = {
+        'origin': 'user',
+        'type': 'is_chain_valid'
+    }
+    server_socket.sendto(json.dumps(message_json).encode('utf-8'), (config['ip-address'], config['blockchain-port']))
+    while not is_chain_valid_returned:
+        time.sleep(0.1)
+    is_chain_valid_returned = False
+    return is_chain_valid_value
+
 def confirmations(server_socket):
     global last_input
 
@@ -91,6 +108,9 @@ def confirmations(server_socket):
 
     global get_balance_value
     global get_balance_returned
+
+    global is_chain_valid_value
+    global is_chain_valid_returned
 
     while True:
         message, address = server_socket.recvfrom(1024)
@@ -127,6 +147,10 @@ def confirmations(server_socket):
         if message['type'] == 'get_balance':
             get_balance_value = message['data']
             get_balance_returned = True
+        if message['type'] == 'is_chain_valid':
+            is_chain_valid_value = message['data']
+            is_chain_valid_returned = True
+
 
 def show_options(options):
     print("Options:")
@@ -166,7 +190,7 @@ def main():
     confirmations_thread.daemon = True
     confirmations_thread.start()
 
-    options = ['create wallet', 'sign-in', 'send', 'balance']
+    options = ['create wallet', 'sign-in', 'send', 'balance', 'is chain valid?']
     show_options(options)
     while True:
         quit_loop = False
@@ -304,6 +328,13 @@ def main():
                 Utils.info(f'You have {Utils.currency(round(get_balance(server_socket, username), 2))}.')
             else:
                 Utils.error('Please sign-in to a wallet.')
+
+        if command == 'is chain valid?':
+            is_valid = is_chain_valid(server_socket)
+            if is_valid:
+                Utils.success('Chain is valid!')
+            else:
+                Utils.error('Chain is invalid')
 
 
 if __name__ == "__main__":

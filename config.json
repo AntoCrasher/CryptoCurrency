@@ -1,5 +1,8 @@
 {
     "ip-address": "127.0.0.1",
     "blockchain-port": 6000,
-    "mining-reward": 5.0
+    "mining-reward": 5.0,
+    "blockchain-path": "./sals_cryptocurrency/blockchain/",
+    "users-path": "./sals_cryptocurrency/users.json",
+    "ledger-path": "./sals_cryptocurrency/ledger.json"
 }

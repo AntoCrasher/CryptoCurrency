@@ -5,8 +5,9 @@ import Utils
 
 class UserManager:
     def __init__(self):
-        self.users_path = './sals_cryptocurrency/users.json'
-        self.ledger_path = './sals_cryptocurrency/ledger.json'
+        self.config = json.loads(open('config.json').read())
+        self.users_path = self.config['users-path']
+        self.ledger_path = self.config['ledger-path']
 
     def username_exist(self, username):
         users = json.loads(open(self.users_path).read())

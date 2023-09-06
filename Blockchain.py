@@ -7,17 +7,18 @@ import os
 
 class Blockchain:
     def __init__(self):
-        self.path = "./sals_cryptocurrency/blockchain/"
+        self.config = json.loads(open('config.json').read())
+        self.path = self.config['blockchain-path']
         self.initial_balance = 100.0
         self.pool_size = 3
         self.max_block_time = 10.0
         self.transaction_pool = []
         self.await_to_mine = []
         self.current_mine_index = -1
-        self.reward = json.loads(open('config.json').read())['mining-reward']
+        self.reward = self.config['mining-reward']
         if self.get_last_block() == None:
             Utils.error('Genesis NOT found (mining)')
-            genesis = self.create_block([], 'bc')
+            genesis = self.create_block([], '-')
             while not genesis.is_hash_valid():
                 genesis.mine()
             self.save_block(genesis)
@@ -30,7 +31,7 @@ class Blockchain:
         if last_block != None:
             last_id = last_block.id
             last_hash = last_block.hash
-        new_block = Block(last_id + 1, data, miner, 0.0, last_hash, datetime.now().isoformat())
+        new_block = Block(last_id + 1, data, miner, self.reward, last_hash, datetime.now().isoformat())
         return new_block
 
     def add_to_transaction_pool(self, data):
@@ -94,3 +95,62 @@ class Blockchain:
             block = self.parse_block(f'{self.path}{file_name}')
             out += str(block) + '\n'
         return out
+
+    def is_chain_valid(self):
+        result = True
+
+        files = os.listdir(self.path)
+        last_hash = '0' * 64
+
+        final_users = json.loads(open(self.config['users-path']).read())
+        final_ledger = json.loads(open(self.config['ledger-path']).read())
+
+        sim_users = []
+        sim_ledger = {}
+        for file_name in files:
+            block_json = json.loads(open(self.path + file_name).read())
+            b_id = block_json['id']
+            b_data = block_json['data']
+            b_miner = block_json['miner']
+            b_reward = block_json['reward']
+            b_prev = block_json['prev']
+            b_timestamp = block_json['timestamp']
+            b_nonce = block_json['nonce']
+            b_hash = block_json['hash']
+
+            block = Block(b_id, b_data, b_miner, b_reward, b_prev, b_timestamp, b_nonce)
+            b_calc_hash = block.get_hash()
+
+            is_hash_mined = b_hash[:5] == '00000'
+            is_hash_correct = b_hash == b_calc_hash
+            is_prev_correct = b_prev == last_hash
+            last_hash = b_calc_hash
+            for action in b_data:
+                if action['type'] == 'wallet_creation':
+                    w_username = action['username']
+                    w_password = action['password']
+                    w_balance = action['balance']
+                    sim_new_user = {
+                        "username": w_username,
+                        "password": w_password
+                    }
+                    sim_users.append(sim_new_user)
+                    sim_ledger[w_username] = w_balance
+                if action['type'] == 'transaction':
+                    t_sender = action['sender']
+                    t_recipient = action['recipient']
+                    t_amount = action['amount']
+                    if t_sender in sim_ledger:
+                        sim_ledger[t_sender] -= t_amount
+                    if t_recipient in sim_ledger:
+                        sim_ledger[t_recipient] += t_amount
+            if b_miner != '-':
+                if b_miner in sim_ledger:
+                    sim_ledger[b_miner] += b_reward
+            if not (is_hash_mined and is_hash_correct and is_prev_correct):
+                result = False
+        is_users_correct = sim_users == final_users
+        is_ledger_correct = sim_ledger == final_ledger
+        if not (is_users_correct and is_ledger_correct):
+            result = False
+        return result

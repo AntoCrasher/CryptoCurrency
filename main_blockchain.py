@@ -98,6 +98,16 @@ def main():
             server_socket.sendto(json.dumps(message_json).encode('utf-8'), address)
             continue
 
+        if message['type'] == 'is_chain_valid':
+            is_valid = blockchain.is_chain_valid()
+            message_json = {
+                'origin': 'blockchain',
+                'type': 'is_chain_valid',
+                'data': is_valid,
+            }
+            server_socket.sendto(json.dumps(message_json).encode('utf-8'), address)
+            continue
+
         if message['origin'] == 'user':
             data = message['data']
             blockchain.add_to_transaction_pool(data)
