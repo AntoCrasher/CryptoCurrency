@@ -25,6 +25,7 @@ User Commands:<br>
 • `(2) Sign-in` : Sign-in to a wallet by entering username and password.<br>
 • `(3) Send` : Send sals by entering recipient and amount (Requires wallet).<br>
 • `(4) Balance` : Get current balance (Requires wallet).<br>
+• `(5) Is chain valid?` : Check if the blockchain is valid.<br>
 • `q` : Cancel current action.<br>
 • `h` : Show commands menu.<br>
 Run `main_miner.py`. This will allow blocks to be mined.<br>
