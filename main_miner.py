@@ -158,9 +158,12 @@ def main():
         while True:
             try:
                 last_input = f'Enter your choice (1-{len(options)}): '
-                choice = int(input(last_input))
-                if 1 <= choice <= len(options):
-                    command = options[choice - 1]
+                choice = input(last_input)
+                if choice == 'h' or 1 <= int(choice) <= len(options):
+                    if choice == 'h':
+                        command = 'h'
+                        break
+                    command = options[int(choice) - 1]
                     break
                 else:
                     Utils.error("Invalid choice. Please enter a valid number.")
